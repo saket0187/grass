@@ -53,7 +53,7 @@ spreadsheet applications and data processing tools. Uses the same *separator*
 as plain format.
 
 For true comma-separated values, combine with `separator=comma`:
-v.profile input=data buffer=100 profile_map=line format=csv separator=comma
+`v.profile input=data buffer=100 profile_map=line format=csv separator=comma`
 
 
 Example output with comma separator:
