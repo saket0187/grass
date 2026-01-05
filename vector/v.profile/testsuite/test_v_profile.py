@@ -235,7 +235,6 @@ class TestProfiling(TestCase):
     
     def testJsonFormat(self):
         """Test JSON format output"""
-        
         vpro = SimpleModule(
             "v.profile",
             input=self.in_points,
@@ -246,16 +245,37 @@ class TestProfiling(TestCase):
         )
         vpro.run()
         
-        # Should produce valid JSON
-        data = json.loads(vpro.outputs.stdout)
+        actual = json.loads(vpro.outputs.stdout)
         
-        # Verify basic structure
-        self.assertIsInstance(data, list)
-        self.assertGreater(len(data), 0)
+        expected = [
+            {
+                "category": 572,
+                "distance": 19537.97,
+                "attributes": {
+                    "featurenam": "Greshams Lake",
+                    "class": "Reservoir",
+                }
+            },
+            {
+                "category": 1029,
+                "distance": 19537.97,
+                "attributes": {
+                    "featurenam": "Greshams Lake Dam",
+                    "class": "Dam",
+                }
+            }
+        ]
         
-        # Check required fields exist
-        self.assertIn("category", data[0])
-        self.assertIn("distance", data[0])
+        # Compare key fields
+        self.assertEqual(len(actual), len(expected))
+        for i in range(len(expected)):
+            self.assertEqual(actual[i]["category"], expected[i]["category"])
+            self.assertAlmostEqual(actual[i]["distance"], expected[i]["distance"], places=2)
+            self.assertEqual(actual[i]["attributes"]["featurenam"], 
+                        expected[i]["attributes"]["featurenam"])
+            self.assertEqual(actual[i]["attributes"]["class"], 
+                        expected[i]["attributes"]["class"])
+
 
     def testMultiCrossing(self):
         """If profile crosses single line multiple times, all crossings
