@@ -11,7 +11,7 @@ Licence:    This program is free software under the GNU General Public
 TODO:       Convert to synthetic dataset. It would allow to shorten output sample length.
             Cover more input/output combinations.
 """
-
+import json
 from pathlib import Path
 
 from grass.gunittest.case import TestCase
@@ -232,6 +232,30 @@ class TestProfiling(TestCase):
             profile_where="cat=193",
         )
         vpro.run()
+    
+    def testJsonFormat(self):
+        """Test JSON format output"""
+        
+        vpro = SimpleModule(
+            "v.profile",
+            input=self.in_points,
+            profile_map=self.in_map,
+            buffer=200,
+            profile_where=self.where,
+            format="json"
+        )
+        vpro.run()
+        
+        # Should produce valid JSON
+        data = json.loads(vpro.outputs.stdout)
+        
+        # Verify basic structure
+        self.assertIsInstance(data, list)
+        self.assertGreater(len(data), 0)
+        
+        # Check required fields exist
+        self.assertIn("category", data[0])
+        self.assertIn("distance", data[0])
 
     def testMultiCrossing(self):
         """If profile crosses single line multiple times, all crossings
