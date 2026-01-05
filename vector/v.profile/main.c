@@ -41,11 +41,11 @@
 #include <float.h>
 
 /* A copy of ring2pts from v.buffer geos.c
-* It is a terrible approach to copy/pasta functions around,
-* but all this GEOS stuff is just a temporary solution before native
-* buffers are fixed. (Will happen at some point after next ten years
-* or so as there's nothing more permanent than a temporary solution.)
-* 2017-11-19
+ * It is a terrible approach to copy/pasta functions around,
+ * but all this GEOS stuff is just a temporary solution before native
+ * buffers are fixed. (Will happen at some point after next ten years
+ * or so as there's nothing more permanent than a temporary solution.)
+ * 2017-11-19
 */
 enum OutputFormat { PLAIN, CSV, JSON };
 
@@ -54,7 +54,7 @@ static int ring2pts(const GEOSGeometry *geom, struct line_pnts *Points)
     int i, ncoords;
     double x, y, z;
     const GEOSCoordSequence *seq = NULL;
-    
+
     G_debug(3, "ring2pts()");
 
     Vect_reset_line(Points);
@@ -67,7 +67,7 @@ static int ring2pts(const GEOSGeometry *geom, struct line_pnts *Points)
     if (!ncoords) {
         G_warning(_("No coordinates in GEOS geometry (can be ok for negative "
                     "distance)!"));
-                    return 0;
+        return 0;
     }
     seq = GEOSGeom_getCoordSeq(geom);
     for (i = 0; i < ncoords; i++) {
@@ -77,11 +77,11 @@ static int ring2pts(const GEOSGeometry *geom, struct line_pnts *Points)
             G_fatal_error(_("Invalid x coordinate %f"), x);
         if (y != y || y > DBL_MAX || y < -DBL_MAX)
             G_fatal_error(_("Invalid y coordinate %f"), y);
-            Vect_append_point(Points, x, y, z);
-        }
-        
-        return 1;
+        Vect_append_point(Points, x, y, z);
     }
+        
+    return 1;
+}
 
     /* Helper for converting multipoligons to GRASS polygons */
     static void add_poly(const GEOSGeometry *OGeom, struct line_pnts *Buffer)
@@ -101,7 +101,7 @@ static int ring2pts(const GEOSGeometry *geom, struct line_pnts *Points)
         Vect_reset_line(gPoints);
         
     nrings = GEOSGetNumInteriorRings(OGeom);
-    
+
     for (i = 0; i < nrings; i++) {
         geom2 = GEOSGetInteriorRingN(OGeom, i);
         if (!ring2pts(geom2, gPoints)) {
@@ -153,7 +153,6 @@ int main(int argc, char *argv[])
     G_JSON_Value *root_value = NULL, *item_value = NULL;
     G_JSON_Array *root_array = NULL;
     G_JSON_Object *item_object = NULL;
-    int skip_header = 0;
 
     /* initialize GIS environment */
     G_gisinit(argv[0]);
@@ -300,7 +299,6 @@ int main(int argc, char *argv[])
     }
     else if (strcmp(format_opt->answer, "csv") == 0) {
         format = CSV;
-        skip_header = 0;  /* CSV includes header by default */
     }
     else {
         format = PLAIN;
@@ -663,7 +661,7 @@ int main(int argc, char *argv[])
                         case GV_POINT:
                             Vect_cat_get(Cats, layer, &cat);
                             proc_point(Points, Profil, Buffer, cat, &rescount,
-                                    open3d);
+                                        open3d);
                             break;
                         case GV_LINE:
                             Vect_reset_line(Ipoints);
@@ -671,7 +669,7 @@ int main(int argc, char *argv[])
                                     Profil, Points, Ipoints, open3d) > 0) {
                                 Vect_cat_get(Cats, layer, &cat);
                                 proc_line(Ipoints, Profil, cat, &rescount,
-                                        open3d);
+                                          open3d);
                             }
                             break;
                         }
@@ -736,35 +734,51 @@ int main(int argc, char *argv[])
                 if (Fi != NULL) {
                     snprintf(sql, sizeof(sql), "select * from %s where %s=%d",
                             Fi->table, Fi->key, resultset[j].cat);
+                    G_debug(2, "SQL: \"%s\"", sql);
                     db_set_string(&dbsql, sql);
-                    
-                    if (db_open_select_cursor(driver, &dbsql, &cursor, DB_SEQUENTIAL) == DB_OK) {
+
+                    if (db_open_select_cursor(driver, &dbsql, &cursor, DB_SEQUENTIAL) != DB_OK) {
+                        G_warning(_("Unable to get attribute data for cat %d"), resultset[j].cat);
+                        fprintf(ascii, "\n");
+                    }
+                    else {
                         nrows = db_get_num_rows(&cursor);
                         table = db_get_cursor_table(&cursor);
                         
-                        if (nrows > 0 && db_fetch(&cursor, DB_NEXT, &more) == DB_OK) {
-                            for (col = 0; col < ncols; col++) {
-                                column = db_get_table_column(table, col);
-                                db_convert_column_value_to_string(column, &valstr);
-                                type = db_get_column_sqltype(column);
-                                
-                                if (type == DB_SQL_TYPE_CHARACTER ||
-                                    type == DB_SQL_TYPE_TEXT)
-                                    fprintf(ascii, "%s\"%s\"", fs, db_get_string(&valstr));
-                                else
-                                    fprintf(ascii, "%s%s", fs, db_get_string(&valstr));
+                        if (nrows > 0) {
+                            if (db_fetch(&cursor, DB_NEXT, &more) != DB_OK) {
+                                G_warning(_("Error while retrieving database record for cat %d"),
+                                        resultset[j].cat);
                             }
+                            else {
+                                for (col = 0; col < ncols; col++) {
+                                    column = db_get_table_column(table, col);
+                                    db_convert_column_value_to_string(column, &valstr);
+                                    type = db_get_column_sqltype(column);
+                                    
+                                    if (type == DB_SQL_TYPE_CHARACTER ||
+                                        type == DB_SQL_TYPE_DATE ||
+                                        type == DB_SQL_TYPE_TIME ||
+                                        type == DB_SQL_TYPE_TIMESTAMP ||
+                                        type == DB_SQL_TYPE_INTERVAL ||
+                                        type == DB_SQL_TYPE_TEXT ||
+                                        type == DB_SQL_TYPE_SERIAL)
+                                        fprintf(ascii, "%s\"%s\"", fs, db_get_string(&valstr));
+                                    else
+                                        fprintf(ascii, "%s%s", fs, db_get_string(&valstr));
+                                }
+                            }
+                            db_close_cursor(&cursor);
                         }
-                        db_close_cursor(&cursor);
                     }
                 }
                 fprintf(ascii, "\n");
-            }
-            break;
+            }    
+        break;
             
         case CSV:
             /* CSV header */
-            if (!skip_header && !no_column_flag->answer) {
+            if (!no_column_flag->answer) {
                 fprintf(ascii, "Number%sDistance", fs);
                 if (open3d == WITH_Z)
                     fprintf(ascii, "%sZ", fs);
@@ -785,26 +799,37 @@ int main(int argc, char *argv[])
                 if (Fi != NULL) {
                     snprintf(sql, sizeof(sql), "select * from %s where %s=%d",
                             Fi->table, Fi->key, resultset[j].cat);
+                    G_debug(2, "SQL: \"%s\"", sql);
                     db_set_string(&dbsql, sql);
                     
-                    if (db_open_select_cursor(driver, &dbsql, &cursor, DB_SEQUENTIAL) == DB_OK) {
+                    if (db_open_select_cursor(driver, &dbsql, &cursor, DB_SEQUENTIAL) != DB_OK) {
+                        G_warning(_("Unable to get attribute data for cat %d"), resultset[j].cat);
+                        fprintf(ascii, "\n");
+                    }
+                    else {
                         nrows = db_get_num_rows(&cursor);
                         table = db_get_cursor_table(&cursor);
                         
-                        if (nrows > 0 && db_fetch(&cursor, DB_NEXT, &more) == DB_OK) {
-                            for (col = 0; col < ncols; col++) {
-                                column = db_get_table_column(table, col);
-                                db_convert_column_value_to_string(column, &valstr);
-                                fprintf(ascii, "%s%s", fs, db_get_string(&valstr));
+                        if (nrows > 0) {
+                            if (db_fetch(&cursor, DB_NEXT, &more) != DB_OK) {
+                                G_warning(_("Error while retrieving database record for cat %d"),
+                                        resultset[j].cat);
                             }
+                            else {
+                                for (col = 0; col < ncols; col++) {
+                                    column = db_get_table_column(table, col);
+                                    db_convert_column_value_to_string(column, &valstr);
+                                    fprintf(ascii, "%s%s", fs, db_get_string(&valstr));
+                                }
+                            }
+                            db_close_cursor(&cursor);
                         }
-                        db_close_cursor(&cursor);
                     }
                 }
                 fprintf(ascii, "\n");
             }
-            break;
-            
+        break;
+
         case JSON:
             /* Build JSON array */
             for (j = 0; j < rescount; j++) {
@@ -825,62 +850,72 @@ int main(int argc, char *argv[])
                 if (Fi != NULL) {
                     snprintf(sql, sizeof(sql), "select * from %s where %s=%d",
                             Fi->table, Fi->key, resultset[j].cat);
+                    G_debug(2, "SQL: \"%s\"", sql);
                     db_set_string(&dbsql, sql);
                     
-                    if (db_open_select_cursor(driver, &dbsql, &cursor, DB_SEQUENTIAL) == DB_OK) {
+                    if (db_open_select_cursor(driver, &dbsql, &cursor, DB_SEQUENTIAL) != DB_OK) {
+                        G_warning(_("Unable to get attribute data for cat %d"), resultset[j].cat);
+                        fprintf(ascii, "\n");
+                    }
+                    else {
                         nrows = db_get_num_rows(&cursor);
                         table = db_get_cursor_table(&cursor);
                         
-                        if (nrows > 0 && db_fetch(&cursor, DB_NEXT, &more) == DB_OK) {
-                            G_JSON_Value *attr_value = G_json_value_init_object();
-                            G_JSON_Object *attr_object = G_json_object(attr_value);
-                            
-                            for (col = 0; col < ncols; col++) {
-                                column = db_get_table_column(table, col);
-                                dbValue *value = db_get_column_value(column);
-                                int ctype = db_get_column_sqltype(column);
-                                const char *col_name = db_get_column_name(column);
-                                
-                                if (db_test_value_isnull(value)) {
-                                    G_json_object_set_null(attr_object, col_name);
-                                }
-                                else if (ctype == DB_SQL_TYPE_INTEGER) {
-                                    G_json_object_set_number(attr_object, col_name, 
-                                                            db_get_value_int(value));
-                                }
-                                else if (ctype == DB_SQL_TYPE_REAL) {
-                                    G_json_object_set_number(attr_object, col_name, 
-                                                            db_get_value_double(value));
-                                }
-                                else {
-                                    db_convert_column_value_to_string(column, &valstr);
-                                    G_json_object_set_string(attr_object, col_name, 
-                                                            db_get_string(&valstr));
-                                }
+                        if (nrows > 0) {
+                            if (db_fetch(&cursor, DB_NEXT, &more) != DB_OK) {
+                                G_warning(_("Error while retrieving database record for cat %d"),
+                                        resultset[j].cat);
                             }
-                            
-                            G_json_object_set_value(item_object, "attributes", attr_value);
+                            else {
+                                G_JSON_Value *attr_value = G_json_value_init_object();
+                                G_JSON_Object *attr_object = G_json_object(attr_value);
+                                
+                                for (col = 0; col < ncols; col++) {
+                                    column = db_get_table_column(table, col);
+                                    dbValue *value = db_get_column_value(column);
+                                    int ctype = db_get_column_sqltype(column);
+                                    const char *col_name = db_get_column_name(column);
+                                    
+                                    if (db_test_value_isnull(value)) {
+                                        G_json_object_set_null(attr_object, col_name);
+                                    }
+                                    else if (ctype == DB_SQL_TYPE_INTEGER) {
+                                        G_json_object_set_number(attr_object, col_name, 
+                                                                db_get_value_int(value));
+                                    }
+                                    else if (ctype == DB_SQL_TYPE_REAL) {
+                                        G_json_object_set_number(attr_object, col_name, 
+                                                                db_get_value_double(value));
+                                    }
+                                    else {
+                                        db_convert_column_value_to_string(column, &valstr);
+                                        G_json_object_set_string(attr_object, col_name, 
+                                                                db_get_string(&valstr));
+                                    }
+                                }
+                                
+                                G_json_object_set_value(item_object, "attributes", attr_value);
+                            }
+                            db_close_cursor(&cursor);
                         }
-                        db_close_cursor(&cursor);
                     }
+                    
                 }
-                
                 G_json_array_append_value(root_array, item_value);
             }
-            
-            /* Output JSON */
-            char *json_string = G_json_serialize_to_string_pretty(root_value);
-            if (!json_string) {
-                G_json_value_free(root_value);
-                G_fatal_error(_("Failed to serialize JSON to pretty format."));
-            }
-            
-            fputs(json_string, ascii);
-            fputc('\n', ascii);
-            
-            G_json_free_serialized_string(json_string);
+        /* Output JSON */
+        char *json_string = G_json_serialize_to_string_pretty(root_value);
+        if (!json_string) {
             G_json_value_free(root_value);
-            break;
+            G_fatal_error(_("Failed to serialize JSON to pretty format."));
+        }
+        
+        fputs(json_string, ascii);
+        fputc('\n', ascii);
+        
+        G_json_free_serialized_string(json_string);
+        G_json_value_free(root_value);
+        break;
     }
 
     /* Build topology for vector map and close them */
