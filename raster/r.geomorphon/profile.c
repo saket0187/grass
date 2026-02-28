@@ -281,6 +281,11 @@ static unsigned write_json(FILE *f)
             if (depth < MAX_STACK_ELEMS - 1) {
                 obj_stack[++depth] = sub_obj;
             }
+            else {
+                G_warning(_("JSON nesting exceeds maximum depth"));
+                G_json_value_free(root_val);
+                return 0;
+            }
             break;
         }
         case T_ESO:
