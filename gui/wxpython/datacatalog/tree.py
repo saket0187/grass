@@ -147,7 +147,7 @@ def getLocationTree(gisdbase, location, queue, mapsets=None, lazy=False):
                 for item in items:
                     m_set = item["mapset"]
                     d_name = item["name"]
-                    if m_set and d_name:
+                    if m_set and d_name and m_set in maps_dict:
                         maps_dict[m_set].append({"name": d_name, "type": t_type})
 
     except ToolError as e:
@@ -296,6 +296,10 @@ class DataCatalogTree(TreeView):
             "raster",
             "vector",
             "raster_3d",
+            "raster_group",
+            "vector_group",
+            "raster_3d_group",
+            "stds_group",
         ]
         self._initImages()
         self.thread = gThread()
@@ -829,6 +833,20 @@ class DataCatalogTree(TreeView):
                     )
                     if map_nodes:
                         return map_nodes[0]
+
+                    group_types = {
+                        "raster_group",
+                        "vector_group",
+                        "raster_3d_group",
+                        "stds_group",
+                    }
+                    for child in mapset_nodes[0].children:
+                        if child.data.get("type") in group_types:
+                            map_nodes = self._model.SearchNodes(
+                                parent=child, name=element_name, type=element_type
+                            )
+                            if map_nodes:
+                                return map_nodes[0]
         return None
 
     def _renameNode(self, node, name):
@@ -917,9 +935,22 @@ class DataCatalogTree(TreeView):
         self.RefreshNode(self.current_mapset_node, recursive=True)
 
     def _populateMapsetItem(self, mapset_node, data):
-        for item in data:
-            self._model.AppendNode(parent=mapset_node, data=dict(**item))
-        self._model.SortChildren(mapset_node)
+        groups = [
+            ("raster_group", _("Raster maps"), ["raster"]),
+            ("raster_3d_group", _("3D raster maps"), ["raster_3d"]),
+            ("vector_group", _("Vector maps"), ["vector"]),
+            ("stds_group", _("Spatio-temporal datasets"), ["strds", "stvds", "str3ds"]),
+        ]
+
+        for g_type, g_name, types in groups:
+            items = [item for item in data if item["type"] in types]
+            if items:
+                group_node = self._model.AppendNode(
+                    parent=mapset_node, data={"type": g_type, "name": g_name}
+                )
+                for item in items:
+                    self._model.AppendNode(parent=group_node, data=dict(**item))
+                self._model.SortChildren(group_node)
 
     def _initImages(self):
         bmpsize = (16, 16)
@@ -933,6 +964,10 @@ class DataCatalogTree(TreeView):
             "raster": MetaIcon(img="raster").GetBitmap(bmpsize),
             "vector": MetaIcon(img="vector").GetBitmap(bmpsize),
             "raster_3d": MetaIcon(img="raster3d").GetBitmap(bmpsize),
+            "raster_group": MetaIcon(img="raster").GetBitmap(bmpsize),
+            "vector_group": MetaIcon(img="vector").GetBitmap(bmpsize),
+            "raster_3d_group": MetaIcon(img="raster3d").GetBitmap(bmpsize),
+            "stds_group": MetaIcon(img="time-period").GetBitmap(bmpsize),
         }
         il = wx.ImageList(bmpsize[0], bmpsize[1], mask=False)
         for each in self._iconTypes:
@@ -974,10 +1009,29 @@ class DataCatalogTree(TreeView):
                 self.selected_stds.append(item)
                 self.selected_stds_map.append(None)
 
-                self.selected_mapset.append(item.parent)
-                self.selected_location.append(item.parent.parent)
-                self.selected_grassdb.append(item.parent.parent.parent)
+                parent_node = item.parent
+                while parent_node and parent_node.data["type"] != "mapset":
+                    parent_node = parent_node.parent
+
+                self.selected_mapset.append(parent_node)
+                self.selected_location.append(parent_node.parent)
+                self.selected_grassdb.append(parent_node.parent.parent)
                 mixed.append("stds")
+
+            elif type in {
+                "raster_group",
+                "vector_group",
+                "raster_3d_group",
+                "stds_group",
+            }:
+                self.selected_layer.append(None)
+                self.selected_stds.append(None)
+                self.selected_stds_map.append(None)
+                self.selected_mapset.append(None)
+                self.selected_location.append(None)
+                self.selected_grassdb.append(None)
+                mixed.append("group")
+
             elif type == "mapset":
                 self.selected_layer.append(None)
                 self.selected_stds.append(None)
@@ -1105,7 +1159,12 @@ class DataCatalogTree(TreeView):
             self.RefreshNode(node, recursive=True)
 
         if node.data["type"] in {"strds", "stvds", "str3ds"} and not node.children:
-            self._reloadDatasetNode(node, node.parent)
+            mapset_node = (
+                node.parent.parent
+                if node.parent.data["type"] == "stds_group"
+                else node.parent
+            )
+            self._reloadDatasetNode(node, mapset_node)
             self.RefreshNode(node, recursive=True)
 
         if node.data["type"] in {
@@ -1115,6 +1174,10 @@ class DataCatalogTree(TreeView):
             "strds",
             "stvds",
             "str3ds",
+            "raster_group",
+            "vector_group",
+            "raster_3d_group",
+            "stds_group",
         }:
             # expand/collapse location/mapset...
             if self.IsNodeExpanded(node):
@@ -1196,7 +1259,7 @@ class DataCatalogTree(TreeView):
         """Expand current mapset"""
         if self.current_mapset_node:
             self.Select(self.current_mapset_node, select=True)
-            self.ExpandNode(self.current_mapset_node, recursive=True)
+            self.ExpandNode(self.current_mapset_node, recursive=False)
 
     def SetRestriction(self, restrict):
         self._restricted = restrict
@@ -1739,12 +1802,34 @@ class DataCatalogTree(TreeView):
                 action="delete",
             )
 
-    def InsertLayer(self, name, mapset_node, element_name):
-        """Insert layer into model and refresh tree"""
-        self._model.AppendNode(
-            parent=mapset_node, data={"type": element_name, "name": name}
+    def InsertElements(self, name, mapset_node, element_name):
+        """Insert elements into model and refresh tree"""
+        group_info = {
+            "raster": {"name": _("Raster maps"), "type": "raster_group"},
+            "vector": {"name": _("Vector maps"), "type": "vector_group"},
+            "raster_3d": {"name": _("3D raster maps"), "type": "raster_3d_group"},
+            "strds": {"name": _("Spatio-temporal datasets"), "type": "stds_group"},
+            "stvds": {"name": _("Spatio-temporal datasets"), "type": "stds_group"},
+            "str3ds": {"name": _("Spatio-temporal datasets"), "type": "stds_group"},
+        }
+        g_info = group_info[element_name]
+        g_name = g_info["name"]
+        g_type = g_info["type"]
+
+        group_nodes = self._model.SearchNodes(
+            parent=mapset_node, name=g_name, type=g_type
         )
-        self._model.SortChildren(mapset_node)
+        if group_nodes:
+            group_node = group_nodes[0]
+        else:
+            group_node = self._model.AppendNode(
+                parent=mapset_node, data={"type": g_type, "name": g_name}
+            )
+
+        self._model.AppendNode(
+            parent=group_node, data={"type": element_name, "name": name}
+        )
+        self._model.SortChildren(group_node)
         self.RefreshNode(mapset_node, recursive=True)
 
     def InsertMapset(self, name, location_node):
@@ -2175,10 +2260,14 @@ class DataCatalogTree(TreeView):
                             self._reloadMapsetNode(node)
                             self.RefreshNode(node.parent, recursive=True)
                         # check if map already exists
-                        elif not self._model.SearchNodes(
-                            parent=node, name=map, type=element
+                        elif not self.GetDbNode(
+                            grassdb=grassdb,
+                            location=location,
+                            mapset=mapset,
+                            element_name=map,
+                            element_type=element,
                         ):
-                            self.InsertLayer(
+                            self.InsertElements(
                                 name=map, mapset_node=node, element_name=element
                             )
                     else:
@@ -2503,7 +2592,8 @@ class DataCatalogTree(TreeView):
         success_count = 0
 
         for stds_node, map_nodes in stds_groups.items():
-            mapset_node = stds_node.parent
+            group_node = stds_node.parent
+            mapset_node = group_node.parent
             location_node = mapset_node.parent
             grassdb_node = location_node.parent
 
