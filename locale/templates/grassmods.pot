@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-12 18:17+0000\n"
+"POT-Creation-Date: 2026-09-19 18:13+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1897,7 +1897,7 @@ msgstr ""
 #: ../raster/r.in.mat/main.c:93 ../raster/r.in.pdal/main.cpp:90
 #: ../raster/r.in.png/main.c:479 ../raster/r.in.poly/main.c:31
 #: ../raster/r.in.xyz/main.c:152 ../raster/r.info/main.c:77
-#: ../raster/r.kappa/main.c:65 ../raster/r.lake/main.c:149
+#: ../raster/r.kappa/main.c:65 ../raster/r.lake/main.c:150
 #: ../raster/r.latlong/main.c:52 ../raster/r.li/r.li.cwed/cwed.c:49
 #: ../raster/r.li/r.li.dominance/dominance.c:43
 #: ../raster/r.li/r.li.edgedensity/edgedensity.c:44
@@ -7938,8 +7938,8 @@ msgstr ""
 #: ../raster/r.in.lidar/main.c:287 ../raster/r.in.lidar/main.c:296
 #: ../raster/r.in.pdal/main.cpp:111 ../raster/r.in.pdal/main.cpp:302
 #: ../raster/r.in.pdal/main.cpp:395 ../raster/r.in.pdal/main.cpp:405
-#: ../raster/r.in.xyz/main.c:294 ../raster/r.lake/main.c:166
-#: ../raster/r.lake/main.c:194 ../raster/r.random/main.c:79
+#: ../raster/r.in.xyz/main.c:294 ../raster/r.lake/main.c:167
+#: ../raster/r.lake/main.c:195 ../raster/r.random/main.c:79
 #: ../raster/r.random/main.c:84 ../raster/r.random/main.c:89
 #: ../raster/r.random/main.c:103 ../raster/r.random/main.c:110
 #: ../raster/r.random/main.c:115 ../raster/r.resamp.rst/main.c:160
@@ -13812,7 +13812,7 @@ msgstr ""
 #: ../raster/r.basins.fill/main.c:50 ../raster/r.carve/main.c:68
 #: ../raster/r.drain/main.c:108 ../raster/r.fill.dir/main.c:85
 #: ../raster/r.flow/main.c:415 ../raster/r.gwflow/main.c:220
-#: ../raster/r.lake/main.c:150 ../raster/r.path/main.c:148
+#: ../raster/r.lake/main.c:151 ../raster/r.path/main.c:148
 #: ../raster/r.sim/r.sim.sediment/main.c:110
 #: ../raster/r.sim/r.sim.water/main.c:110
 #: ../raster/r.solute.transport/main.c:227 ../raster/r.stream.extract/main.c:74
@@ -22929,99 +22929,99 @@ msgstr ""
 msgid "error running r.stats"
 msgstr ""
 
-#: ../raster/r.lake/main.c:151 ../raster/r.ros/main.c:208
+#: ../raster/r.lake/main.c:152 ../raster/r.ros/main.c:208
 #: ../raster/r.spread/main.c:102
 msgid "hazard"
 msgstr ""
 
-#: ../raster/r.lake/main.c:152
+#: ../raster/r.lake/main.c:153
 msgid "flood"
 msgstr ""
 
-#: ../raster/r.lake/main.c:153
+#: ../raster/r.lake/main.c:154
 msgid "Fills lake at given point to given level."
 msgstr ""
 
-#: ../raster/r.lake/main.c:159
+#: ../raster/r.lake/main.c:160
 msgid "Water level"
 msgstr ""
 
-#: ../raster/r.lake/main.c:169
+#: ../raster/r.lake/main.c:170
 msgid "Seed point coordinates"
 msgstr ""
 
-#: ../raster/r.lake/main.c:170
+#: ../raster/r.lake/main.c:171
 msgid "Either this coordinates pair or a seed map have to be specified"
 msgstr ""
 
-#: ../raster/r.lake/main.c:174 ../raster/r.lake/main.c:183
+#: ../raster/r.lake/main.c:175 ../raster/r.lake/main.c:184
 msgid "Seed"
 msgstr ""
 
-#: ../raster/r.lake/main.c:179
+#: ../raster/r.lake/main.c:180
 msgid "Input raster map with given starting point(s) (at least 1 cell > 0)"
 msgstr ""
 
-#: ../raster/r.lake/main.c:181
+#: ../raster/r.lake/main.c:182
 msgid "Either this parameter or a coordinates pair have to be specified"
 msgstr ""
 
-#: ../raster/r.lake/main.c:188
+#: ../raster/r.lake/main.c:189
 msgid "Use negative depth values for lake raster map"
 msgstr ""
 
-#: ../raster/r.lake/main.c:193
+#: ../raster/r.lake/main.c:194
 msgid "Overwrite seed map with result (lake) map"
 msgstr ""
 
-#: ../raster/r.lake/main.c:200
+#: ../raster/r.lake/main.c:201
 msgid "Both seed map and coordinates cannot be specified"
 msgstr ""
 
-#: ../raster/r.lake/main.c:203
+#: ../raster/r.lake/main.c:204
 msgid "Seed map or seed coordinates must be set!"
 msgstr ""
 
-#: ../raster/r.lake/main.c:206
+#: ../raster/r.lake/main.c:207
 msgid "Seed coordinates and output map lake= must be set!"
 msgstr ""
 
-#: ../raster/r.lake/main.c:209
+#: ../raster/r.lake/main.c:210
 msgid "Both lake and overwrite cannot be specified"
 msgstr ""
 
-#: ../raster/r.lake/main.c:212
+#: ../raster/r.lake/main.c:213
 msgid "Output lake map or overwrite flag must be set!"
 msgstr ""
 
-#: ../raster/r.lake/main.c:240
+#: ../raster/r.lake/main.c:241
 msgid "Seed point outside the current region"
 msgstr ""
 
-#: ../raster/r.lake/main.c:254
+#: ../raster/r.lake/main.c:255
 msgid "G_malloc: out of memory"
 msgstr ""
 
-#: ../raster/r.lake/main.c:276
+#: ../raster/r.lake/main.c:277
 msgid "Given water level at seed point is below earth surface. Increase water level or move seed point."
 msgstr ""
 
-#: ../raster/r.lake/main.c:358
+#: ../raster/r.lake/main.c:359
 #, c-format
 msgid "Lake depth from %f to %f (specified water level is taken as zero)"
 msgstr ""
 
-#: ../raster/r.lake/main.c:360
+#: ../raster/r.lake/main.c:361
 #, c-format
 msgid "Lake area %f square meters"
 msgstr ""
 
-#: ../raster/r.lake/main.c:361
+#: ../raster/r.lake/main.c:362
 #, c-format
 msgid "Lake volume %f cubic meters"
 msgstr ""
 
-#: ../raster/r.lake/main.c:362
+#: ../raster/r.lake/main.c:363
 msgid "Volume is correct only if lake depth (terrain raster map) is in meters"
 msgstr ""
 
